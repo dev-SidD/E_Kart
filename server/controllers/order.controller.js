@@ -1,6 +1,8 @@
 import db from "../config/db.js";
 
 export const placeOrder = async (req, res) => {
+  console.log("🔄 Starting order placement process...");
+
   const {
     customer_name,
     customer_email,
@@ -8,33 +10,47 @@ export const placeOrder = async (req, res) => {
     total_amount,
   } = req.body;
 
+  console.log("📦 Order data:", { customer_name, customer_email, customer_address, total_amount });
+
   try {
     // 1️⃣ Get cart items first to validate
+    console.log("🛒 Getting cart items...");
     const cartItems = await new Promise((resolve, reject) => {
       db.query(
         "SELECT cart.*, products.title, products.price, products.discount_price, products.stock_quantity " +
         "FROM cart JOIN products ON cart.product_id = products.id",
         (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
+          if (err) {
+            console.error("❌ Error getting cart items:", err);
+            reject(err);
+          } else {
+            console.log("✅ Found cart items:", results.length);
+            resolve(results);
+          }
         }
       );
     });
 
     if (cartItems.length === 0) {
+      console.log("❌ Cart is empty");
       return res.status(400).json({ message: "Cart is empty" });
     }
 
     // 2️⃣ Validate stock availability
+    console.log("📊 Validating stock...");
     for (const item of cartItems) {
+      console.log(`🔍 Checking ${item.title}: requested ${item.quantity}, available ${item.stock_quantity}`);
       if (item.stock_quantity < item.quantity) {
+        console.log(`❌ Insufficient stock for ${item.title}`);
         return res.status(400).json({
           message: `Insufficient stock for ${item.title}. Available: ${item.stock_quantity}`
         });
       }
     }
+    console.log("✅ Stock validation passed");
 
     // 3️⃣ Create order
+    console.log("📝 Creating order...");
     const orderResult = await new Promise((resolve, reject) => {
       db.query(
         `INSERT INTO orders
@@ -42,8 +58,13 @@ export const placeOrder = async (req, res) => {
          VALUES (?, ?, ?, ?, ?)`,
         [customer_name, customer_email, customer_address, total_amount, 'pending'],
         (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
+          if (err) {
+            console.error("❌ Error creating order:", err);
+            reject(err);
+          } else {
+            console.log("✅ Order created with ID:", result.insertId);
+            resolve(result);
+          }
         }
       );
     });
@@ -51,7 +72,10 @@ export const placeOrder = async (req, res) => {
     const orderId = orderResult.insertId;
 
     // 4️⃣ Insert order items and update stock
+    console.log("📦 Processing order items...");
     for (const item of cartItems) {
+      console.log(`🔄 Processing item: ${item.title} (ID: ${item.product_id})`);
+
       // Insert order item
       await new Promise((resolve, reject) => {
         db.query(
@@ -65,8 +89,13 @@ export const placeOrder = async (req, res) => {
             item.discount_price || item.price,
           ],
           (err) => {
-            if (err) reject(err);
-            else resolve();
+            if (err) {
+              console.error(`❌ Error inserting order item for ${item.title}:`, err);
+              reject(err);
+            } else {
+              console.log(`✅ Order item inserted for ${item.title}`);
+              resolve();
+            }
           }
         );
       });
@@ -77,25 +106,44 @@ export const placeOrder = async (req, res) => {
           "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
           [item.quantity, item.product_id],
           (err) => {
-            if (err) reject(err);
-            else resolve();
+            if (err) {
+              console.error(`❌ Error updating stock for ${item.title}:`, err);
+              reject(err);
+            } else {
+              console.log(`✅ Stock updated for ${item.title}`);
+              resolve();
+            }
           }
         );
       });
     }
 
     // 5️⃣ Clear cart
+    console.log("🗑️ Clearing cart...");
     await new Promise((resolve, reject) => {
       db.query("DELETE FROM cart", (err) => {
-        if (err) reject(err);
-        else resolve();
+        if (err) {
+          console.error("❌ Error clearing cart:", err);
+          reject(err);
+        } else {
+          console.log("✅ Cart cleared");
+          resolve();
+        }
       });
     });
 
+    console.log("🎉 Order placement completed successfully!");
     res.json({ message: "Order placed successfully", orderId });
 
   } catch (error) {
-    console.error("Order placement error:", error);
+    console.error("💥 Order placement failed:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
     res.status(500).json({ message: "Failed to place order", error: error.message });
   }
 };

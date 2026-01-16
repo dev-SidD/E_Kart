@@ -8,25 +8,35 @@ export const placeOrder = async (req, res) => {
     total_amount,
   } = req.body;
 
-  // Start transaction
-  const connection = await new Promise((resolve, reject) => {
-    db.getConnection((err, conn) => {
-      if (err) reject(err);
-      else resolve(conn);
-    });
-  });
-
   try {
-    await new Promise((resolve, reject) => {
-      connection.beginTransaction((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
+    // 1️⃣ Get cart items first to validate
+    const cartItems = await new Promise((resolve, reject) => {
+      db.query(
+        "SELECT cart.*, products.title, products.price, products.discount_price, products.stock_quantity " +
+        "FROM cart JOIN products ON cart.product_id = products.id",
+        (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        }
+      );
     });
 
-    // 1️⃣ Create order
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    // 2️⃣ Validate stock availability
+    for (const item of cartItems) {
+      if (item.stock_quantity < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${item.title}. Available: ${item.stock_quantity}`
+        });
+      }
+    }
+
+    // 3️⃣ Create order
     const orderResult = await new Promise((resolve, reject) => {
-      connection.query(
+      db.query(
         `INSERT INTO orders
          (customer_name, customer_email, shipping_address, total_amount, status)
          VALUES (?, ?, ?, ?, ?)`,
@@ -40,40 +50,11 @@ export const placeOrder = async (req, res) => {
 
     const orderId = orderResult.insertId;
 
-    // 2️⃣ Get cart items
-    const cartItems = await new Promise((resolve, reject) => {
-      connection.query(
-        "SELECT cart.*, products.title, products.price, products.discount_price, products.stock_quantity " +
-        "FROM cart JOIN products ON cart.product_id = products.id",
-        (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        }
-      );
-    });
-
-    if (cartItems.length === 0) {
-      await new Promise((resolve, reject) => {
-        connection.rollback(() => resolve());
-      });
-      return res.status(400).json({ message: "Cart is empty" });
-    }
-
-    // 3️⃣ Validate stock and insert order items
+    // 4️⃣ Insert order items and update stock
     for (const item of cartItems) {
-      // Check stock availability
-      if (item.stock_quantity < item.quantity) {
-        await new Promise((resolve, reject) => {
-          connection.rollback(() => resolve());
-        });
-        return res.status(400).json({
-          message: `Insufficient stock for ${item.title}. Available: ${item.stock_quantity}`
-        });
-      }
-
       // Insert order item
       await new Promise((resolve, reject) => {
-        connection.query(
+        db.query(
           `INSERT INTO order_items
            (order_id, product_id, quantity, price)
            VALUES (?, ?, ?, ?)`,
@@ -92,7 +73,7 @@ export const placeOrder = async (req, res) => {
 
       // Update product stock
       await new Promise((resolve, reject) => {
-        connection.query(
+        db.query(
           "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
           [item.quantity, item.product_id],
           (err) => {
@@ -103,17 +84,9 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    // 4️⃣ Clear cart
+    // 5️⃣ Clear cart
     await new Promise((resolve, reject) => {
-      connection.query("DELETE FROM cart", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Commit transaction
-    await new Promise((resolve, reject) => {
-      connection.commit((err) => {
+      db.query("DELETE FROM cart", (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -123,12 +96,7 @@ export const placeOrder = async (req, res) => {
 
   } catch (error) {
     console.error("Order placement error:", error);
-    await new Promise((resolve, reject) => {
-      connection.rollback(() => resolve());
-    });
     res.status(500).json({ message: "Failed to place order", error: error.message });
-  } finally {
-    connection.release();
   }
 };
 

@@ -13,7 +13,7 @@ const db = mysql.createConnection({
   host: process.env.MYSQLHOST || "mysql",
   user: "root",
   password: "nPVSLRVJyaoZWHTGOMuWpJNekPAgBdix",
-  database: "'railway'",
+  database: "railway",
   port: process.env.MYSQLPORT || 3306,
 });
 

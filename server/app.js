@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 
 // 🔥 Initialize DB connection (VERY IMPORTANT)
-import "./db.js";
+import "./config/db.js";
 
 // Routes
 import productRoutes from "./routes/product.routes.js";

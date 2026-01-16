@@ -1,16 +1,18 @@
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import dotenvExpand from "dotenv-expand";
 
-dotenv.config();
+// 1. Configure dotenv and capture the output object
+const myEnv = dotenv.config();
+
+// 2. Pass that object to dotenvExpand to handle the variables
+dotenvExpand.expand(myEnv);
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "mysql",
-
-  // 🔥 USE RAILWAY PROVIDED VARS DIRECTLY
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   port: 3306,
 });
 

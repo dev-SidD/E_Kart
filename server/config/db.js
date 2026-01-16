@@ -1,14 +1,7 @@
-import dotenv from "dotenv";
-dotenv.config(); // ✅ FORCE dotenv here
-
 import mysql from "mysql2";
+import dotenv from "dotenv";
 
-console.log("DB CONFIG USED 👉", {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  passwordLoaded: !!process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+dotenv.config();
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -19,9 +12,9 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error("❌ Database connection failed:", err);
+    console.error("❌ DB connection failed:", err);
   } else {
-    console.log("✅ MySQL Connected");
+    console.log("✅ Connected to Cloud MySQL");
   }
 });
 

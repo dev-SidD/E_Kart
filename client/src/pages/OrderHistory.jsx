@@ -105,7 +105,7 @@ function OrderHistory() {
                           Order #{order.id}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {formatDate(order.order_date)}
+                          {formatDate(order.created_at)}
                         </p>
                       </div>
                     </div>
@@ -145,9 +145,9 @@ function OrderHistory() {
                           </p>
                           <div className="flex items-baseline gap-2">
                             <span className="text-sm font-medium text-gray-900">
-                              ₹{item.price_at_purchase?.toLocaleString('en-IN')}
+                              ₹{item.price?.toLocaleString('en-IN')}
                             </span>
-                            {item.discount_price && item.discount_price < item.price_at_purchase && (
+                            {item.discount_price && item.discount_price < item.price && (
                               <span className="text-xs text-gray-500 line-through">
                                 ₹{item.discount_price?.toLocaleString('en-IN')}
                               </span>
@@ -157,7 +157,7 @@ function OrderHistory() {
 
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">
-                            ₹{(item.price_at_purchase * item.quantity)?.toLocaleString('en-IN')}
+                            ₹{(item.price * item.quantity)?.toLocaleString('en-IN')}
                           </p>
                         </div>
                       </div>
@@ -170,7 +170,7 @@ function OrderHistory() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <p className="text-sm font-medium text-gray-900">Delivery Address:</p>
-                      <p className="text-sm text-gray-600">{order.customer_address}</p>
+                      <p className="text-sm text-gray-600">{order.shipping_address}</p>
                       <p className="text-sm text-gray-600">{order.customer_name}</p>
                     </div>
                     <div className="flex gap-2">

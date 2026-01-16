@@ -9,12 +9,11 @@ export const placeOrder = (req, res) => {
   } = req.body;
 
   // 1️⃣ Create order with timestamp and status
-  const orderDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
   db.query(
     `INSERT INTO orders
-     (customer_name, customer_email, customer_address, total_amount, order_date, status)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [customer_name, customer_email, customer_address, total_amount, orderDate, 'completed'],
+     (customer_name, customer_email, shipping_address, total_amount, status)
+     VALUES (?, ?, ?, ?, ?)`,
+    [customer_name, customer_email, customer_address, total_amount, 'pending'],
     (err, orderResult) => {
       if (err) return res.status(500).json(err);
 
@@ -37,7 +36,7 @@ export const placeOrder = (req, res) => {
             // Insert order item
             db.query(
               `INSERT INTO order_items
-               (order_id, product_id, quantity, price_at_purchase)
+               (order_id, product_id, quantity, price)
                VALUES (?, ?, ?, ?)`,
               [
                 orderId,
@@ -98,20 +97,20 @@ export const getOrderHistory = (req, res) => {
       o.id as order_id,
       o.customer_name,
       o.customer_email,
-      o.customer_address,
+      o.shipping_address,
       o.total_amount,
-      o.order_date,
+      o.created_at,
       o.status,
       oi.product_id,
       oi.quantity,
-      oi.price_at_purchase,
+      oi.price,
       p.title as product_title,
       p.image_url,
       p.discount_price
     FROM orders o
     LEFT JOIN order_items oi ON o.id = oi.order_id
     LEFT JOIN products p ON oi.product_id = p.id
-    ORDER BY o.order_date DESC, o.id DESC
+    ORDER BY o.created_at DESC, o.id DESC
   `;
 
   db.query(query, (err, results) => {
@@ -126,9 +125,9 @@ export const getOrderHistory = (req, res) => {
           id: row.order_id,
           customer_name: row.customer_name,
           customer_email: row.customer_email,
-          customer_address: row.customer_address,
+          shipping_address: row.shipping_address,
           total_amount: row.total_amount,
-          order_date: row.order_date,
+          created_at: row.created_at,
           status: row.status,
           items: []
         });
@@ -140,7 +139,7 @@ export const getOrderHistory = (req, res) => {
           title: row.product_title,
           image_url: row.image_url,
           quantity: row.quantity,
-          price_at_purchase: row.price_at_purchase,
+          price: row.price,
           discount_price: row.discount_price
         });
       }

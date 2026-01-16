@@ -1,12 +1,18 @@
 import mysql from "mysql2";
 import dotenv from "dotenv";
-import dotenvExpand from "dotenv-expand";
+// FIX 1: Use named import for expand
+import { expand } from "dotenv-expand";
 
 // 1. Configure dotenv and capture the output object
 const myEnv = dotenv.config();
 
-// 2. Pass that object to dotenvExpand to handle the variables
-dotenvExpand.expand(myEnv);
+// FIX 2: Check if dotenv actually found the file before expanding
+if (myEnv.error) {
+  console.warn("⚠️  .env file not found or could not be read");
+} else {
+  // FIX 3: Call expand() directly (since we imported it by name)
+  expand(myEnv);
+}
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "mysql",
@@ -18,7 +24,7 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error("❌ DB connection failed:", err);
+    console.error("❌ DB connection failed:", err.message);
   } else {
     console.log("✅ Connected to MySQL (Railway)");
   }

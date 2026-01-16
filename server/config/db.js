@@ -5,9 +5,12 @@ dotenv.config();
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "mysql",
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+
+  // 🔥 USE RAILWAY PROVIDED VARS DIRECTLY
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+
   port: 3306,
 });
 

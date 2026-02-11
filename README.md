@@ -2,8 +2,6 @@
 
 A modern, responsive e-commerce platform built with React, Node.js, and MySQL. Experience seamless online shopping with features like product search, wishlist, shopping cart, and order management.
 
-![E-Kart Preview](https://via.placeholder.com/800x400/2874f0/ffffff?text=E-Kart+E-Commerce+Platform)
-
 ## ✨ Features
 
 ### 🛍️ Core E-Commerce Features

@@ -28,7 +28,7 @@ export const getWishlistItems = (req, res) => {
     SELECT w.id, p.id as product_id, p.title, p.image_url, p.price, p.discount_price
     FROM wishlist w
     JOIN products p ON w.product_id = p.id
-    ORDER BY w.created_at DESC
+    ORDER BY w.added_at DESC
   `;
 
   db.query(query, (err, result) => {

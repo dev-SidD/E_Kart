@@ -155,9 +155,9 @@ export const getOrderHistory = (req, res) => {
       o.id as order_id,
       o.customer_name,
       o.customer_email,
-      COALESCE(o.shipping_address, o.customer_address) as shipping_address,
+      o.shipping_address,
       o.total_amount,
-      COALESCE(o.created_at, o.order_date) as created_at,
+      o.created_at,
       o.status,
       oi.product_id,
       oi.quantity,
@@ -168,7 +168,7 @@ export const getOrderHistory = (req, res) => {
     FROM orders o
     LEFT JOIN order_items oi ON o.id = oi.order_id
     LEFT JOIN products p ON oi.product_id = p.id
-    ORDER BY COALESCE(o.created_at, o.order_date) DESC, o.id DESC
+    ORDER BY o.created_at DESC, o.id DESC
   `;
 
   db.query(query, (err, results) => {
@@ -183,9 +183,9 @@ export const getOrderHistory = (req, res) => {
           id: row.order_id,
           customer_name: row.customer_name,
           customer_email: row.customer_email,
-          shipping_address: row.shipping_address || row.customer_address,
+          shipping_address: row.shipping_address,
           total_amount: row.total_amount,
-          created_at: row.created_at || row.order_date,
+          created_at: row.created_at,
           status: row.status,
           items: []
         });
